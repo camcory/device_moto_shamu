@@ -567,7 +567,8 @@ int QCamera3HeapMemory::getMatchBufIndex(void * /*object*/)
  * RETURN     : none
  *==========================================================================*/
 QCamera3GrallocMemory::QCamera3GrallocMemory()
-        : QCamera3Memory()
+        : QCamera3Memory(),
+          mColorSpace(ITU_R_601)
 {
     for (int i = 0; i < MM_CAMERA_MAX_NUM_FRAMES; i ++) {
         mBufferHandle[i] = NULL;
@@ -624,6 +625,9 @@ int QCamera3GrallocMemory::registerBuffer(buffer_handle_t *buffer)
     mBufferHandle[mBufferCount] = buffer;
     mPrivateHandle[mBufferCount] =
         (struct private_handle_t *)(*mBufferHandle[mBufferCount]);
+
+    setMetaData(mPrivateHandle[mBufferCount], UPDATE_COLOR_SPACE, &mColorSpace);
+
     mMemInfo[mBufferCount].main_ion_fd = open("/dev/ion", O_RDONLY);
     if (mMemInfo[mBufferCount].main_ion_fd < 0) {
         ALOGE("%s: failed: could not open ion device", __func__);
@@ -850,6 +854,37 @@ void *QCamera3GrallocMemory::getBufferHandle(int index)
         return NULL;
     }
     return mBufferHandle[index];
+}
+
+/*===========================================================================
+ * FUNCTION   : setColorSpace
+ *
+ * DESCRIPTION: Set color space based on capture intent
+ *
+ * PARAMETERS :
+ *   @intent   : capture intent
+ *
+ * RETURN     : int32_t type of status
+ *              NO_ERROR -- successs
+ *              non-zero failure ccde
+ *==========================================================================*/
+int32_t QCamera3GrallocMemory::setColorSpace(uint8_t intent)
+{
+    int32_t rc = NO_ERROR;
+
+    switch (intent) {
+    case ANDROID_CONTROL_CAPTURE_INTENT_VIDEO_RECORD:
+    case ANDROID_CONTROL_CAPTURE_INTENT_VIDEO_SNAPSHOT:
+        mColorSpace = ITU_R_709;
+        break;
+    default:
+        mColorSpace = ITU_R_601;
+        break;
+    }
+    ALOGI("%s: setting colorSpace to %d for capture intent %d",
+            __func__, mColorSpace, intent);
+
+    return rc;
 }
 
 }; //namespace qcamera

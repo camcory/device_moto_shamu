@@ -51,19 +51,19 @@ on fs
     # Keeping following partitions outside fstab file. As user may not have
     # these partition flashed on the device. Failure to mount any partition in fstab file
     # results in failure to launch late-start class.
-
-    wait /dev/block/platform/msm_sdcc.1/by-name/persist
-    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev barrier=1
-    restorecon_recursive /persist
-    mkdir /persist/data 0700 system system
-    mkdir /persist/data/sfs 0700 system system
-    mkdir /persist/data/tz 0700 system system
-
     wait /dev/block/platform/msm_sdcc.1/by-name/oem
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/oem /oem ro nosuid nodev context=u:object_r:oemfs:s0
 
     mkdir /fsg 0755 root root
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/mdm1m9kefs3 /fsg ro nosuid nodev barrier=0 context=u:object_r:fsg_file:s0
+
+    restorecon_recursive /persist
+    mkdir /persist/data 0700 system system
+    mkdir /persist/data/sfs 0700 system system
+    mkdir /persist/data/tz 0700 system system
+    mkdir /persist/public 0755 system radio
+    mkdir /persist/public/hiddenmenu 0775 system radio
+    mkdir /persist/public/hiddenmenu/data 0775 system radio
 
     # Enable rmnet data and aggregation
     setprop persist.rmnet.mux enabled
@@ -97,11 +97,16 @@ on post-fs-data
     mkdir /data/ss-ram-dumps 0750 radio log
     mkdir /data/ss-ram-dumps/bp-dumps 0750 radio log
 
+    # rild files
+    mkdir /data/misc/audio_cutback 0770 radio audio
+
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
     setrlimit 8 67108864 67108864
+
     # Allow subsystem (modem etc) debugging
-    write /sys/module/subsystem_restart/parameters/enable_debug ${persist.sys.ssr.enable_debug}
+    # write /sys/module/subsystem_restart/parameters/enable_debug ${persist.sys.ssr.enable_debug}
+
     write /sys/kernel/boot_adsp/boot 1
 
     # Subsytem Restart
@@ -291,12 +296,16 @@ on post-fs-data
     mkdir /data/system 0775 system system
     #symlink /data/misc/wifi/wpa_supplicant /data/system/wpa_supplicant
 
+    #Create directories for gpsone_daemon services
+    mkdir /data/misc/gpsone_d 0770 system gps
+
+    #Create directories for QuIPS
+    mkdir /data/misc/quipc 0770 gps system
+
     #Create directories for Location services
     mkdir /data/misc/location 0770 gps gps
     mkdir /data/misc/location/mq 0770 gps gps
     mkdir /data/misc/location/xtwifi 0770 gps gps
-    mkdir /data/misc/location/quipc 0770 gps system
-    mkdir /data/misc/location/gsiff 0770 gps gps
 
     #Create directory from IMS services
     mkdir /data/shared 0755
@@ -371,6 +380,22 @@ service qmuxd /system/bin/qmuxd
 service netmgrd /system/bin/netmgrd
     class main
     group radio
+
+service imsqmidaemon /system/bin/imsqmidaemon
+    class main
+    user system
+    socket ims_qmid stream 0660 system radio
+    group radio log
+
+service imsdatadaemon /system/bin/imsdatadaemon
+    class main
+    user root
+    socket ims_datad stream 0660 system radio
+    group system wifi radio inet log
+    disabled
+
+on property:sys.ims.QMI_DAEMON_STATUS=1
+    start imsdatadaemon
 
 service sensors /system/bin/sensors.qcom
     class core
@@ -475,16 +500,10 @@ service iprenew_eth0 /system/bin/dhcpcd -n
     oneshot
 
 service adspd /system/bin/adspd /dev/ttyHS3
-   class late_start
-   socket adspdsock stream 0666 media media
+   class main
+   socket adspdsock stream 0660 media media
    user media
    group media input
-
-#start GNSS/Sensor interface daemon
-service gsiff_daemon /system/vendor/bin/gsiff_daemon
-    class late_start
-    user gps
-    group gps net_raw
 
 on property:sys.boot_completed=1
     start qcom-post-boot
@@ -507,6 +526,7 @@ on charger
 
 service charger /charger
     class charger
+    group log
     seclabel u:r:healthd:s0
 
 # Allow usb charging to be disabled peristently
@@ -568,7 +588,7 @@ on property:init.svc.surfaceflinger=stopped
     stop ppd
 
 service mmi-touch-sh /system/bin/sh /init.mmi.touch.sh atmel
-    class late_start
+    class main
     user root
     oneshot
 
@@ -596,3 +616,12 @@ on property:ro.mdm_helper_proxy_req=true
 
 on property:init.svc.ril-daemon=running
     setprop ro.mdm_helper_proxy_req true
+
+service atfwd /system/bin/ATFWD-daemon
+    class late_start
+    user system
+    group system radio
+
+service cnd /system/bin/cnd
+    class late_start
+    socket cnd stream 660 root inet

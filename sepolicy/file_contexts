@@ -7,6 +7,7 @@
 /data/misc/location/quipc(/.*)? u:object_r:quipc_data_file:s0
 /data/ss-ram-dumps(/.*)?       u:object_r:ram_dump_logs:s0
 /data/adspd(/.*)?              u:object_r:adspd_data_file:s0
+/data/misc/audio_cutback(/.*)? u:object_r:audio_cutback_data_file:s0
 
 # TODO move out of /data/system
 /data/system/dropbox-add(/.*)? u:object_r:dropbox_data_file:s0
@@ -49,6 +50,7 @@
 
 # tee devices
 /dev/block/mmcblk0rpmb          u:object_r:drm_block_device:s0
+/dev/block/mmcblk0p34           u:object_r:drm_block_device:s0
 
 # Used by keystore to access trustzone
 /dev/qseecom                   u:object_r:tee_device:s0
@@ -74,6 +76,10 @@
 /dev/socket/adspdsock           u:object_r:adspd_socket:s0
 /dev/socket/sensor_ctl_socket   u:object_r:sensors_socket:s0
 /dev/socket/mpdecision(/.*)?    u:object_r:mpdecision_socket:s0
+
+#Add context for IMS Socket node
+/dev/socket/ims_qmid            u:object_r:ims_socket:s0
+/dev/socket/ims_datad           u:object_r:ims_socket:s0
 
 # Shared memory log
 /dev/smem_log                   u:object_r:shared_log_device:s0
@@ -105,6 +111,7 @@
 /persist/data/sfs(/.*)?         u:object_r:persist_drm_file:s0
 /persist/sensors(/.*)?          u:object_r:persist_sensors_file:s0
 /persist/mdm(/.*)?              u:object_r:persist_modem_file:s0
+/persist/public/hiddenmenu(/.*)? u:object_r:persist_hiddenmenu_file:s0
 
 #/system binaries
 /system/bin/adspd               u:object_r:adspd_exec:s0
@@ -125,6 +132,7 @@
 /system/bin/thermal-engine      u:object_r:thermald_exec:s0
 /system/bin/time_daemon         u:object_r:time_exec:s0
 /system/bin/tcmd_mini           u:object_r:tcmd_exec:s0
+/system/bin/ATFWD-daemon        u:object_r:atfwd_exec:s0
 
 # Bluetooth
 /sys/class/rfkill/rfkill0/state u:object_r:sysfs_bluetooth_writable:s0
@@ -144,4 +152,11 @@
 /sys/bus/platform/drivers/xhci_msm_hsic(/.*)?            u:object_r:sysfs_xhci_msm_hsic:s0
 /sys/devices/msm_hsic_host/host_ready                    u:object_r:sysfs_msm_hsic_host:s0
 
-/sys/devices/cycapsense_prog\.1/cycapsense_fw             u:object_r:sysfs_capsense_update:s0
+/sys/devices/cycapsense_prog.1/cycapsense_fw             u:object_r:sysfs_capsense_update:s0
+/sys/devices/mmi_sar_ctrl.[0-9]*/sar_wifi                u:object_r:sysfs_sar_wifi:s0
+
+/system/bin/imsdatadaemon                       u:object_r:ims_exec:s0
+/system/bin/imsqmidaemon                        u:object_r:ims_exec:s0
+
+/dev/socket/cnd  u:object_r:cnd_socket:s0
+/system/bin/cnd  u:object_r:cnd_exec:s0

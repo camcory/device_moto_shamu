@@ -47,10 +47,10 @@
     <bool name="config_telephony_use_own_number_for_voicemail">true</bool>
 
     <!-- MMS user agent string -->
-    <string name="config_mms_user_agent" translatable="false">motoXT1103</string>
+    <string name="config_mms_user_agent" translatable="false">Nexus6-SPRINT</string>
 
     <!-- MMS user agent prolfile url -->
-    <string name="config_mms_user_agent_profile_url" translatable="false">http://device.sprintpcs.com/Motorola/XT1103/motoxt1103.rdf</string>
+    <string name="config_mms_user_agent_profile_url" translatable="false">http://device.sprintpcs.com/Motorola/Nexus6/Nexus6.rdf</string>
 
     <!-- Array of ConnectivityManager.TYPE_xxxx values allowable for tethering -->
     <!-- Common options are [1, 4] for TYPE_WIFI and TYPE_MOBILE_DUN or
@@ -62,6 +62,22 @@
         <item>9</item>
     </integer-array>
 
+    <!-- If Voice Radio Technology is RIL_RADIO_TECHNOLOGY_LTE:14 this is the value
+         that should be used instead. A value of RIL_RADIO_TECHNOLOGY_UNKNOWN:0 means
+         there is no replacement value and VoLTE is assumed to be supported
+
+         For sprint we will use RIL_RADIO_TECHNOLOGY_1xRTT:6 -->
+    <integer name="config_volte_replacement_rat">6</integer>
+
     <!-- Default network policy warning threshold, in megabytes. -->
     <integer name="config_networkPolicyDefaultWarning">51200</integer>
+
+   <!-- Entitlement APP provisioning for Tethering -->
+    <string-array translatable="false" name="config_mobile_hotspot_provision_app">
+        <item>com.motorola.entitlement</item>
+        <item>com.motorola.entitlement.EntitlementDialogActivity</item>
+    </string-array>
+    <string translatable="false" name="config_mobile_hotspot_provision_app_no_ui">com.motorola.entitlement.SILENT_ENTITLEMENT_CHECK</string>
+    <string translatable="false" name="config_mobile_hotspot_provision_response">com.motorola.entitlement.SILENT_ENTITLEMENT_CHECK_RESULT</string>
+
 </resources>

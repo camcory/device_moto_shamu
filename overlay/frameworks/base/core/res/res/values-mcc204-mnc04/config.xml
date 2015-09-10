@@ -20,12 +20,6 @@
 <!-- These resources are around just to allow their values to be customized
      for different hardware and product builds. -->
 <resources>
-    <!-- MMS user agent string -->
-    <string name="config_mms_user_agent" translatable="false">motoxt1103</string>
-
-    <!-- MMS user agent prolfile url -->
-    <string name="config_mms_user_agent_profile_url" translatable="false">http://uaprof.vtext.com/mot/xt1103/xt1103.xml</string>
-
     <string-array translatable="false" name="config_default_vm_number">
         <!-- VZW -->
         <item>*86;BAE0000000000000</item>
@@ -35,5 +29,8 @@
         <item>com.motorola.entitlement</item>
         <item>com.motorola.entitlement.EntitlementDialogActivity</item>
     </string-array>
+    <string translatable="false" name="config_mobile_hotspot_provision_app_no_ui">com.motorola.entitlement.SILENT_ENTITLEMENT_CHECK</string>
+    <string translatable="false" name="config_mobile_hotspot_provision_response">com.motorola.entitlement.SILENT_ENTITLEMENT_CHECK_RESULT</string>
 
+    <bool name="config_LTE_eri_for_network_name">false</bool>
 </resources>
