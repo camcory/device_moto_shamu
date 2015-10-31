@@ -43,6 +43,7 @@
 #define STATE_HDR_OFF "state=3"
 #define MAX_LENGTH         50
 #define BOOST_SOCKET       "/dev/socket/mpdecision/pb"
+#define WAKE_GESTURE_PATH "/sys/bus/i2c/devices/1-004a/tsp"
 static int client_sockfd;
 static struct sockaddr_un client_addr;
 static int last_state = -1;
@@ -231,6 +232,35 @@ static void set_interactive(__attribute__((unused)) struct power_module *module,
     }
 }
 
+static void sysfs_write(char *path, char *s)
+{
+    char buf[80];
+    int len;
+    int fd = open(path, O_WRONLY);
+     if (fd < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error opening %s: %s\n", path, buf);
+        return;
+    }
+     len = write(fd, s, strlen(s));
+    if (len < 0) {
+        strerror_r(errno, buf, sizeof(buf));
+        ALOGE("Error writing to %s: %s\n", path, buf);
+    }
+     close(fd);
+}
+ static void set_feature(struct power_module *module, feature_t feature, int state)
+{
+    switch (feature) {
+    case POWER_FEATURE_DOUBLE_TAP_TO_WAKE:
+        sysfs_write(WAKE_GESTURE_PATH, state ? "AUTO" : "OFF");
+        break;
+    default:
+        ALOGW("Error setting the feature, it doesn't exist %d\n", feature);
+        break;
+    }
+}
+
 static void power_hint( __attribute__((unused)) struct power_module *module,
                         __attribute__((unused)) power_hint_t hint,
                         __attribute__((unused)) void *data)
@@ -273,6 +303,7 @@ static int power_open(const hw_module_t* module, const char* name,
             dev->init = power_init;
             dev->setInteractive = set_interactive;
             dev->powerHint = power_hint;
+            dev->setFeature = set_feature;
 
             *device = (hw_device_t*)dev;
         } else
@@ -303,4 +334,5 @@ struct power_module HAL_MODULE_INFO_SYM = {
     .init = power_init,
     .setInteractive = set_interactive,
     .powerHint = power_hint,
+    .setFeature = set_feature,
 };
