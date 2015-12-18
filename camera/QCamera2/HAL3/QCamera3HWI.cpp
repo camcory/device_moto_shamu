@@ -397,6 +397,15 @@ void QCamera3HardwareInterface::camEvtHandle(uint32_t /*camera_handle*/,
         switch(evt->server_event_type) {
             case CAM_EVENT_TYPE_DAEMON_DIED:
                 ALOGE("%s: Fatal, camera daemon died", __func__);
+
+                //close the camera backend
+                if (obj->mCameraHandle && obj->mCameraHandle->camera_handle
+                        && obj->mCameraHandle->ops) {
+                    obj->mCameraHandle->ops->error_close_camera(obj->mCameraHandle->camera_handle);
+                } else {
+                    ALOGE("%s: Could not close camera on error because the handle or ops is NULL",
+                            __func__);
+                }
                 memset(&notify_msg, 0, sizeof(camera3_notify_msg_t));
                 notify_msg.type = CAMERA3_MSG_ERROR;
                 notify_msg.message.error.error_code = CAMERA3_MSG_ERROR_DEVICE;
@@ -1614,21 +1623,46 @@ void QCamera3HardwareInterface::handleMetadataWithLock(
     mm_camera_super_buf_t *metadata_buf)
 {
     ATRACE_CALL();
-    metadata_buffer_t *metadata = (metadata_buffer_t *)metadata_buf->bufs[0]->buffer;
-    int32_t frame_number_valid = *(int32_t *)
-        POINTER_OF_META(CAM_INTF_META_FRAME_NUMBER_VALID, metadata);
-    uint32_t frame_number = *(uint32_t *)
-        POINTER_OF_META(CAM_INTF_META_FRAME_NUMBER, metadata);
-    nsecs_t capture_time = *(int64_t *)
-        POINTER_OF_META(CAM_INTF_META_SENSOR_TIMESTAMP, metadata);
-    cam_frame_dropped_t cam_frame_drop = *(cam_frame_dropped_t *)
-        POINTER_OF_META(CAM_INTF_META_FRAME_DROPPED, metadata);
-    camera3_notify_msg_t notify_msg;
 
-    int32_t urgent_frame_number_valid = *(int32_t *)
-        POINTER_OF_META(CAM_INTF_META_URGENT_FRAME_NUMBER_VALID, metadata);
-    uint32_t urgent_frame_number = *(uint32_t *)
-        POINTER_OF_META(CAM_INTF_META_URGENT_FRAME_NUMBER, metadata);
+    int32_t  frame_number_valid        = 0;
+    uint32_t frame_number              = 0;
+    int64_t  capture_time              = 0;
+    int32_t  urgent_frame_number_valid = 0;
+    uint32_t urgent_frame_number       = 0;
+
+    metadata_buffer_t   *metadata      = (metadata_buffer_t *)metadata_buf->bufs[0]->buffer;
+    cam_frame_dropped_t cam_frame_drop =
+            *(cam_frame_dropped_t *) POINTER_OF_META(CAM_INTF_META_FRAME_DROPPED, metadata);
+
+    int32_t  *p_frame_number_valid        =
+            (int32_t *) POINTER_OF_META(CAM_INTF_META_FRAME_NUMBER_VALID, metadata);
+    uint32_t *p_frame_number              =
+            (uint32_t *) POINTER_OF_META(CAM_INTF_META_FRAME_NUMBER, metadata);
+    int64_t  *p_capture_time              =
+            (int64_t *) POINTER_OF_META(CAM_INTF_META_SENSOR_TIMESTAMP, metadata);
+    int32_t  *p_urgent_frame_number_valid =
+            (int32_t *) POINTER_OF_META(CAM_INTF_META_URGENT_FRAME_NUMBER_VALID, metadata);
+    uint32_t *p_urgent_frame_number       =
+            (uint32_t *) POINTER_OF_META(CAM_INTF_META_URGENT_FRAME_NUMBER, metadata);
+
+    if ((NULL == p_frame_number_valid)        ||
+            (NULL == p_frame_number)              ||
+            (NULL == p_capture_time)              ||
+            (NULL == p_urgent_frame_number_valid) ||
+            (NULL == p_urgent_frame_number))
+    {
+        mMetadataChannel->bufDone(metadata_buf);
+        free(metadata_buf);
+        goto done_metadata;
+    }
+    else
+    {
+        frame_number_valid        = *p_frame_number_valid;
+        frame_number              = *p_frame_number;
+        capture_time              = *p_capture_time;
+        urgent_frame_number_valid = *p_urgent_frame_number_valid;
+        urgent_frame_number       = *p_urgent_frame_number;
+    }
 
     if (urgent_frame_number_valid) {
         CDBG("%s: valid urgent frame_number = %d, capture_time = %lld",
@@ -1658,6 +1692,17 @@ void QCamera3HardwareInterface::handleMetadataWithLock(
                 // Extract 3A metadata
                 result.result =
                     translateCbUrgentMetadataToResultMetadata(metadata);
+
+                if (result.result == NULL)
+                {
+                    CameraMetadata dummyMetadata;
+                    dummyMetadata.update(ANDROID_SENSOR_TIMESTAMP,
+                            &i->timestamp, 1);
+                    dummyMetadata.update(ANDROID_REQUEST_ID,
+                            &(i->request_id), 1);
+                    result.result = dummyMetadata.release();
+                }
+
                 // Populate metadata result
                 result.frame_number = urgent_frame_number;
                 result.num_output_buffers = 0;
@@ -1745,8 +1790,8 @@ void QCamera3HardwareInterface::handleMetadataWithLock(
                     &(i->request_id), 1);
             result.result = dummyMetadata.release();
         } else {
-
             // Send shutter notify to frameworks
+            camera3_notify_msg_t notify_msg;
             notify_msg.type = CAMERA3_MSG_SHUTTER;
             notify_msg.message.shutter.frame_number = i->frame_number;
             notify_msg.message.shutter.timestamp = capture_time;
@@ -2768,7 +2813,6 @@ void QCamera3HardwareInterface::captureResultCb(mm_camera_super_buf_t *metadata_
         notify_msg.message.shutter.frame_number = mLoopBackResult->frame_number;
         notify_msg.message.shutter.timestamp = mLoopBackTimestamp;
         mCallbackOps->notify(mCallbackOps, &notify_msg);
-
         /* Send capture result */
         mCallbackOps->process_capture_result(mCallbackOps, mLoopBackResult);
         free_camera_metadata((camera_metadata_t *)mLoopBackResult->result);
@@ -2781,7 +2825,6 @@ void QCamera3HardwareInterface::captureResultCb(mm_camera_super_buf_t *metadata_
     else
         handleBufferWithLock(buffer, frame_number);
     pthread_mutex_unlock(&mMutex);
-    return;
 }
 
 /*===========================================================================
@@ -3797,10 +3840,25 @@ void QCamera3HardwareInterface::extractJpegMetadata(
                 frame_settings.find(ANDROID_JPEG_THUMBNAIL_QUALITY).data.u8,
                 frame_settings.find(ANDROID_JPEG_THUMBNAIL_QUALITY).count);
 
-    if (frame_settings.exists(ANDROID_JPEG_THUMBNAIL_SIZE))
-        jpegMetadata.update(ANDROID_JPEG_THUMBNAIL_SIZE,
-                frame_settings.find(ANDROID_JPEG_THUMBNAIL_SIZE).data.i32,
+    if (frame_settings.exists(ANDROID_JPEG_THUMBNAIL_SIZE)) {
+        int32_t thumbnail_size[2];
+        thumbnail_size[0] = frame_settings.find(ANDROID_JPEG_THUMBNAIL_SIZE).data.i32[0];
+        thumbnail_size[1] = frame_settings.find(ANDROID_JPEG_THUMBNAIL_SIZE).data.i32[1];
+        if (frame_settings.exists(ANDROID_JPEG_ORIENTATION)) {
+            int32_t orientation =
+                  frame_settings.find(ANDROID_JPEG_ORIENTATION).data.i32[0];
+            if ((orientation == 90) || (orientation == 270)) {
+               //swap thumbnail dimensions for rotations 90 and 270 in jpeg metadata.
+               int32_t temp;
+               temp = thumbnail_size[0];
+               thumbnail_size[0] = thumbnail_size[1];
+               thumbnail_size[1] = temp;
+            }
+         }
+         jpegMetadata.update(ANDROID_JPEG_THUMBNAIL_SIZE,
+                thumbnail_size,
                 frame_settings.find(ANDROID_JPEG_THUMBNAIL_SIZE).count);
+    }
 }
 
 /*===========================================================================
@@ -4435,15 +4493,6 @@ int QCamera3HardwareInterface::initStaticMetadata(int cameraId)
                     largest_picture_size = gCamCapability[cameraId]->picture_sizes_tbl[i];
             }
 
-            /*For below 2 formats we also support i/p streams for reprocessing advertise those*/
-            if (scalar_formats[j] == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED ||
-                    scalar_formats[j] == HAL_PIXEL_FORMAT_YCbCr_420_888) {
-                available_stream_configs[idx] = scalar_formats[j];
-                available_stream_configs[idx+1] = largest_picture_size.width;
-                available_stream_configs[idx+2] = largest_picture_size.height;
-                available_stream_configs[idx+3] = ANDROID_SCALER_AVAILABLE_STREAM_CONFIGURATIONS_INPUT;
-                idx+=4;
-            }
             break;
         }
     }
@@ -4657,7 +4706,6 @@ int QCamera3HardwareInterface::initStaticMetadata(int cameraId)
     if (flashAvailable) {
         avail_ae_modes[size++] = ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH;
         avail_ae_modes[size++] = ANDROID_CONTROL_AE_MODE_ON_ALWAYS_FLASH;
-        avail_ae_modes[size++] = ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE;
     }
     staticInfo.update(ANDROID_CONTROL_AE_AVAILABLE_MODES,
                       avail_ae_modes,
@@ -4737,8 +4785,6 @@ int QCamera3HardwareInterface::initStaticMetadata(int cameraId)
     available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING;
     available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS;
     available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BURST_CAPTURE;
-    available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING;
-    available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING;
     if (facingBack) {
         available_capabilities[available_capabilities_count++] = ANDROID_REQUEST_AVAILABLE_CAPABILITIES_RAW;
     }
@@ -4746,18 +4792,15 @@ int QCamera3HardwareInterface::initStaticMetadata(int cameraId)
                       available_capabilities,
                       available_capabilities_count);
 
-    int32_t max_input_streams = 1;
+    int32_t max_input_streams = 0;
     staticInfo.update(ANDROID_REQUEST_MAX_NUM_INPUT_STREAMS,
                       &max_input_streams,
                       1);
 
-    int32_t io_format_map[] = {
-            HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED, 2,
-            HAL_PIXEL_FORMAT_YCbCr_420_888, HAL_PIXEL_FORMAT_BLOB,
-            HAL_PIXEL_FORMAT_YCbCr_420_888, 2,
-            HAL_PIXEL_FORMAT_YCbCr_420_888, HAL_PIXEL_FORMAT_BLOB};
+    int32_t io_format_map[] = {};
+;
     staticInfo.update(ANDROID_SCALER_AVAILABLE_INPUT_OUTPUT_FORMATS_MAP,
-                      io_format_map, sizeof(io_format_map)/sizeof(io_format_map[0]));
+                      io_format_map, 0);
 
     int32_t max_latency = (facingBack)? ANDROID_SYNC_MAX_LATENCY_PER_FRAME_CONTROL:CAM_MAX_SYNC_LATENCY;
     staticInfo.update(ANDROID_SYNC_MAX_LATENCY,
@@ -5238,8 +5281,8 @@ int32_t QCamera3HardwareInterface::getScalarFormat(int32_t format)
  *==========================================================================*/
 
 double QCamera3HardwareInterface::computeNoiseModelEntryS(int32_t sens) {
-   double s = 3.738032e-06 * sens + 3.651935e-04;
-   return s < 0.0 ? 0.0 : s;
+    double s = 4.290559e-06 * sens + 4.370087e-05;
+    return s < 0.0 ? 0.0 : s;
 }
 
 /*===========================================================================
@@ -5255,8 +5298,10 @@ double QCamera3HardwareInterface::computeNoiseModelEntryS(int32_t sens) {
  *==========================================================================*/
 
 double QCamera3HardwareInterface::computeNoiseModelEntryO(int32_t sens) {
-  double o = 4.499952e-07 * sens + -2.968624e-04;
-  return o < 0.0 ? 0.0 : o;
+    double digital_gain = sens / 320.0;
+    digital_gain = digital_gain < 1.0 ? 1.0 : digital_gain;
+    double o = 6.011498e-11 * sens * sens + 2.173219e-06 * digital_gain * digital_gain;
+    return o < 0.0 ? 0.0 : o;
 }
 
 /*===========================================================================

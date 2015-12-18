@@ -49,7 +49,8 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_COPY_FILES += \
     device/moto/shamu/media_profiles.xml:system/etc/media_profiles.xml \
-    device/moto/shamu/media_codecs.xml:system/etc/media_codecs.xml
+    device/moto/shamu/media_codecs.xml:system/etc/media_codecs.xml \
+    device/moto/shamu/media_codecs_performance.xml:system/etc/media_codecs_performance.xml
 
 PRODUCT_COPY_FILES += \
     device/moto/shamu/mixer_paths.xml:system/etc/mixer_paths.xml \
@@ -104,7 +105,7 @@ PRODUCT_COPY_FILES += \
 
 # BT FW
 PRODUCT_COPY_FILES += \
-    device/moto/shamu/bluetooth/BCM4356A2_001.003.015.0071.0190_ORC.hcd:$(TARGET_COPY_OUT_VENDOR)/firmware/bcm4354A2.hcd
+    device/moto/shamu/bluetooth/BCM4356A2_001.003.015.0077.0214_ORC.hcd:$(TARGET_COPY_OUT_VENDOR)/firmware/bcm4354A2.hcd
 
 # For SPN display
 PRODUCT_COPY_FILES += \
@@ -224,7 +225,19 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 #Reduce IMS logging
 PRODUCT_PROPERTY_OVERRIDES += \
-    persist.ims.disableDebugLogs=1
+    persist.ims.disableDebugLogs=1 \
+    persist.ims.disableADBLogs=2 \
+    persist.ims.disableDebugLogs=0 \
+    persist.ims.disableQXDMLogs=0 \
+    persist.ims.disableIMSLogs=1 \
+    persist.camera.hal.debug.mask=7 \
+    persist.camera.ISP.debug.mask=0 \
+    persist.camera.pproc.debug.mask=7 \
+    persist.camera.stats.debug.mask=0 \
+    persit.camera.imglib.logs=1 \
+    persist.camera.mct.debug.mask=1 \
+    persist.camera.sensor.debug=0 \
+    vidc.debug.level=1
 
 #Disable QC Oem Hook
 PRODUCT_PROPERTY_OVERRIDES += \

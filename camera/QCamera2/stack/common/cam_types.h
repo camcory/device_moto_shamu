@@ -576,7 +576,8 @@ typedef enum {
 
 typedef enum {
     CAM_AEC_TRIGGER_IDLE,
-    CAM_AEC_TRIGGER_START
+    CAM_AEC_TRIGGER_START,
+    CAM_AEC_TRIGGER_CANCEL
 } cam_aec_trigger_type_t;
 
 typedef enum {
@@ -616,6 +617,12 @@ typedef enum {
     CAM_BLACK_LEVEL_LOCK_OFF,
     CAM_BLACK_LEVEL_LOCK_ON,
 } cam_black_level_lock_t;
+
+typedef enum {
+    CAM_HOTPIXEL_MODE_OFF,
+    CAM_HOTPIXEL_MODE_FAST,
+    CAM_HOTPIXEL_MODE_HIGH_QUALITY,
+} cam_hotpixel_mode_t;
 
 typedef enum {
     CAM_LENS_SHADING_MAP_MODE_OFF,
