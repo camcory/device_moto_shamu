@@ -90,7 +90,6 @@ TARGET_USES_ION := true
 NUM_FRAMEBUFFER_SURFACE_BUFFERS := 3
 OVERRIDE_RS_DRIVER := libRSDriver_adreno.so
 TARGET_FORCE_HWC_FOR_VIRTUAL_DISPLAYS := true
-USE_OPENGL_RENDERER := true
 
 # Shader cache config options
 # Maximum size of the  GLES Shaders that can be cached for reuse.
