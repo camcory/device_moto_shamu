@@ -178,6 +178,10 @@ PRODUCT_PACKAGES += \
     init.shamu.usb.rc \
     ueventd.shamu.rc
 
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/rootdir/etc/init.qcom.devwait.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.qcom.devwait.sh \
+    $(LOCAL_PATH)/rootdir/etc/init.qcom.devstart.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.qcom.devstart.sh
+
 # RIL
 PRODUCT_PACKAGES += \
     librmnetctl \

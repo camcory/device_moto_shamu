@@ -46,3 +46,6 @@ type sysfs_sar_wifi, fs_type, sysfs_type;
 
 type sysfs_kgsl_gpuclk, fs_type, sysfs_type;
 type sysfs_socinfo, sysfs_type, fs_type, mlstrustedobject;
+
+#type for devstart
+type sysfs_audio, fs_type, sysfs_type;

@@ -30,6 +30,7 @@ genfscon sysfs /devices/soc0                                                    
 genfscon sysfs /devices/virtual/android_usb/android0/f_rmnet_smd_sdio/transport     u:object_r:sysfs_rmnet:s0
 genfscon sysfs /devices/virtual/net/wlan0/address                                   u:object_r:sysfs_mac_address:s0
 genfscon sysfs /devices/virtual/thermal                                             u:object_r:sysfs_thermal:s0
+genfscon sysfs /kernel/boot_adsp/boot                                               u:object_r:sysfs_audio:s0
 genfscon sysfs /module/bcmdhd/parameters/firmware_path                              u:object_r:sysfs_wlan_fwpath:s0
 genfscon sysfs /module/cpu_boost/parameters                                         u:object_r:sysfs_cpuboost:s0
 genfscon sysfs /module/msm_thermal                                                  u:object_r:sysfs_thermal:s0
