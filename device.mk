@@ -300,8 +300,10 @@ PRODUCT_COPY_FILES += \
 
 # Modem debugger
 ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
+ifeq (,$(filter aosp_shamu, $(TARGET_PRODUCT)))
 PRODUCT_PACKAGES += \
-    QXDMLogger
+    QXDMLoggerV2
+endif # aosp_shamu
 
 # Disable modem ramdumps
 PRODUCT_PROPERTY_OVERRIDES += \
@@ -396,6 +398,16 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     audio_hal.period_size=192
 
-# Enable boot.oat filtering of compiled classes to reduce boot.oat size. b/28026683
-PRODUCT_COPY_FILES += \
-    frameworks/base/compiled-classes-phone:system/etc/compiled-classes
+# Set correct voice call audio property values
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.config.vc_call_vol_steps=6 \
+    persist.audio.dualmic.config=endfire \
+    ro.qc.sdk.audio.fluencetype=fluence \
+    persist.audio.fluence.voicecall=true \
+    persist.audio.fluence.voicecomm=false \
+    persist.audio.fluence.voicerec=false \
+    persist.audio.fluence.speaker=false
+
+# OEM Unlock reporting
+ADDITIONAL_DEFAULT_PROPERTIES += \
+    ro.oem_unlock_supported=1

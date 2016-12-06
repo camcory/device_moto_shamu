@@ -255,6 +255,7 @@ QCamera3HardwareInterface::QCamera3HardwareInterface(int cameraId,
       mFlush(false),
       mParamHeap(NULL),
       mParameters(NULL),
+      mPrevParameters(NULL),
       m_bIsVideo(false),
       m_bIs4KVideo(false),
       mEisEnable(0),
@@ -299,6 +300,7 @@ QCamera3HardwareInterface::QCamera3HardwareInterface(int cameraId,
         CDBG("%s: Raw dump from Camera HAL enabled", __func__);
 
     mPendingBuffersMap.num_buffers = 0;
+    mPendingBuffersMap.last_frame_number = -1;
 }
 
 /*===========================================================================
@@ -362,6 +364,13 @@ QCamera3HardwareInterface::~QCamera3HardwareInterface()
         memset(mParameters, 0, sizeof(parm_buffer_t));
         // Check if there is still pending buffer not yet returned.
         if (hasPendingBuffers) {
+            for (auto& pendingBuffer : mPendingBuffersMap.mPendingBufferList) {
+                ALOGE("%s: Buffer not yet returned for stream. Frame number %d, format 0x%x, width %d, height %d",
+                        __func__, pendingBuffer.frame_number, pendingBuffer.stream->format, pendingBuffer.stream->width,
+                        pendingBuffer.stream->height);
+            }
+            ALOGE("%s: Last requested frame number is %d", __func__, mPendingBuffersMap.last_frame_number);
+
             uint8_t restart = TRUE;
             AddSetParmEntryToBatch(mParameters, CAM_INTF_META_DAEMON_RESTART,
                     sizeof(restart), &restart);
@@ -1780,14 +1789,14 @@ void QCamera3HardwareInterface::handleMetadataWithLock(
                 for (uint32_t k = 0; k < cam_frame_drop.cam_stream_ID.num_streams; k++) {
                    if (streamID == cam_frame_drop.cam_stream_ID.streamID[k]) {
                        // Send Error notify to frameworks with CAMERA3_MSG_ERROR_BUFFER
-                       CDBG("%s: Start of reporting error frame#=%d, streamID=%d",
+                       ALOGW("%s: Start of reporting error frame#=%d, streamID=%d",
                               __func__, i->frame_number, streamID);
                        notify_msg.type = CAMERA3_MSG_ERROR;
                        notify_msg.message.error.frame_number = i->frame_number;
                        notify_msg.message.error.error_code = CAMERA3_MSG_ERROR_BUFFER ;
                        notify_msg.message.error.error_stream = j->stream;
                        mCallbackOps->notify(mCallbackOps, &notify_msg);
-                       CDBG("%s: End of reporting error frame#=%d, streamID=%d",
+                       ALOGW("%s: End of reporting error frame#=%d, streamID=%d",
                               __func__, i->frame_number, streamID);
                        PendingFrameDropInfo PendingFrameDrop;
                        PendingFrameDrop.frame_number=i->frame_number;
@@ -2388,7 +2397,7 @@ int QCamera3HardwareInterface::processCaptureRequest(
     }
 
     if(request->input_buffer == NULL) {
-       rc = setFrameParameters(request, streamID, snapshotStreamId);
+       rc = setFrameParameters(request, streamID, blob_request, snapshotStreamId);
         if (rc < 0) {
             ALOGE("%s: fail to set frame parameters", __func__);
             pthread_mutex_unlock(&mMutex);
@@ -2448,6 +2457,7 @@ int QCamera3HardwareInterface::processCaptureRequest(
     CDBG("%s: mPendingBuffersMap.num_buffers = %d",
           __func__, mPendingBuffersMap.num_buffers);
 
+    mPendingBuffersMap.last_frame_number = frameNumber;
     mPendingRequestsList.push_back(pendingRequest);
 
     if(mFlush) {
@@ -2481,8 +2491,16 @@ int QCamera3HardwareInterface::processCaptureRequest(
         }
 
         if (output.stream->format == HAL_PIXEL_FORMAT_BLOB) {
-            rc = channel->request(output.buffer, frameNumber,
-                    request->input_buffer, (request->input_buffer)? &reproc_meta : mParameters);
+            if (request->input_buffer) {
+                rc = channel->request(output.buffer, frameNumber,
+                        request->input_buffer, &reproc_meta);
+            } else if (!request->settings) {
+                rc = channel->request(output.buffer, frameNumber,
+                        NULL, mPrevParameters);
+            } else {
+                rc = channel->request(output.buffer, frameNumber,
+                        NULL, mParameters);
+            }
             if (rc < 0) {
                 ALOGE("%s: Fail to request on picture channel", __func__);
                 pthread_mutex_unlock(&mMutex);
@@ -2966,7 +2984,7 @@ QCamera3HardwareInterface::translateFromHalMetadata(
     if (IS_META_AVAILABLE(CAM_INTF_META_FACE_DETECTION, metadata)){
         cam_face_detection_data_t *faceDetectionInfo =
             (cam_face_detection_data_t *)POINTER_OF_META(CAM_INTF_META_FACE_DETECTION, metadata);
-        uint8_t numFaces = faceDetectionInfo->num_faces_detected;
+        uint8_t numFaces = MIN(faceDetectionInfo->num_faces_detected, MAX_ROI);
         int32_t faceIds[MAX_ROI];
         uint8_t faceScores[MAX_ROI];
         int32_t faceRectangles[MAX_ROI * 4];
@@ -4159,6 +4177,7 @@ int QCamera3HardwareInterface::initParameters()
     }
 
     mParameters = (metadata_buffer_t*) DATA_PTR(mParamHeap,0);
+    mPrevParameters = (metadata_buffer_t *)malloc(sizeof(metadata_buffer_t));
     return rc;
 }
 
@@ -4181,6 +4200,9 @@ void QCamera3HardwareInterface::deinitParameters()
     mParamHeap = NULL;
 
     mParameters = NULL;
+
+    free(mPrevParameters);
+    mPrevParameters = NULL;
 }
 
 /*===========================================================================
@@ -5966,6 +5988,7 @@ camera_metadata_t* QCamera3HardwareInterface::translateCapabilityToMetadata(int 
  * PARAMETERS :
  *   @request   : request that needs to be serviced
  *   @streamID : Stream ID of all the requested streams
+ *   @blob_request: Whether this request is a blob request or not
  *
  * RETURN     : success: NO_ERROR
  *              failure:
@@ -5973,6 +5996,7 @@ camera_metadata_t* QCamera3HardwareInterface::translateCapabilityToMetadata(int 
 int QCamera3HardwareInterface::setFrameParameters(
                     camera3_capture_request_t *request,
                     cam_stream_ID_t streamID,
+                    int blob_request,
                     uint32_t snapshotStreamId)
 {
     /*translate from camera_metadata_t type to parm_type_t*/
@@ -6006,6 +6030,8 @@ int QCamera3HardwareInterface::setFrameParameters(
 
     if(request->settings != NULL){
         rc = translateToHalMetadata(request, mParameters, snapshotStreamId);
+        if (blob_request)
+                memcpy(mPrevParameters, mParameters, sizeof(metadata_buffer_t));
     }
 
     return rc;

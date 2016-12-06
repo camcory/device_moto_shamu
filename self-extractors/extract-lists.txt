@@ -2,7 +2,6 @@
     TO_EXTRACT="\
             system/vendor/firmware/bcm20795_firmware.ncd \
             system/vendor/firmware/bcm4354A2.hcd \
-            system/xbin/wlutil \
             "
     ;;
   moto)
@@ -138,7 +137,6 @@
             system/bin/qmuxd \
             system/bin/qseecomd \
             system/bin/radish \
-            system/bin/rundiag \
             system/bin/sensors.qcom \
             system/bin/test_diag \
             system/bin/thermal-engine \
