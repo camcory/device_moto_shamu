@@ -184,3 +184,6 @@
 
 /dev/socket/cnd  u:object_r:cnd_socket:s0
 /system/bin/cnd  u:object_r:cnd_exec:s0
+
+# Dumpstate HAL
+/system/vendor/bin/hw/android\.hardware\.dumpstate@1\.0-service.shamu      u:object_r:hal_dumpstate_default_exec:s0
