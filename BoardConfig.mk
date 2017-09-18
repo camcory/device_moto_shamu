@@ -106,6 +106,7 @@ MAX_EGL_CACHE_SIZE := 2048*1024
 MAX_VIRTUAL_DISPLAY_DIMENSION := 2048
 
 # Recovery
+LZMA_RAMDISK_TARGETS := recovery
 TARGET_RECOVERY_FSTAB = device/moto/shamu/rootdir/etc/fstab.shamu
 
 # RIL
