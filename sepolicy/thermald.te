@@ -32,3 +32,8 @@ allow thermald {
     sysfs_mpdecision
     sysfs_thermal
 }:file rw_file_perms;
+
+userdebug_or_eng(`
+  allow thermald diag_device:chr_file rw_file_perms;
+')
+dontaudit thermald diag_device:chr_file rw_file_perms;

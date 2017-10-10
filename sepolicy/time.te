@@ -16,3 +16,8 @@ allow time time_data_file:file create_file_perms;
 allow time self:socket *;
 allowxperm time self:socket ioctl msm_sock_ipc_ioctls;
 allow time self:capability { setuid setgid };
+
+userdebug_or_eng(`
+  allow time diag_device:chr_file rw_file_perms;
+')
+dontaudit time diag_device:chr_file rw_file_perms;

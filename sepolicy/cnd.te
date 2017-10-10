@@ -11,3 +11,8 @@ allow cnd self:capability { net_raw setuid setgid };
 
 allow cnd netmgrd:dir search;
 allow cnd netmgrd:file r_file_perms;
+
+userdebug_or_eng(`
+  allow cnd diag_device:chr_file rw_file_perms;
+')
+dontaudit cnd diag_device:chr_file rw_file_perms;
