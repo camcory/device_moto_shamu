@@ -14,3 +14,8 @@ allow system_server persist_file:dir search;
 # whitelist qualcomm specific ioctls
 allow system_server self:socket ioctl;
 allowxperm system_server self:socket ioctl msm_sock_ipc_ioctls;
+
+userdebug_or_eng(`
+  allow system_server diag_device:chr_file rw_file_perms;
+')
+dontaudit system_server diag_device:chr_file rw_file_perms;

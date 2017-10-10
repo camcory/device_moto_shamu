@@ -41,3 +41,8 @@ allow rild radio_data_file:file create_file_perms;
 
 # for /system/bin/qmi_motext_hook
 allow rild system_file:file execute_no_trans;
+
+userdebug_or_eng(`
+  allow rild diag_device:chr_file rw_file_perms;
+')
+dontaudit rild diag_device:chr_file rw_file_perms;
