@@ -65,9 +65,6 @@ BOARD_HAL_STATIC_LIBRARIES := libhealthd.shamu
 DEVICE_MANIFEST_FILE := device/moto/shamu/manifest.xml
 DEVICE_MATRIX_FILE := device/moto/shamu/compatibility_matrix.xml
 
-# Disable dex-preopt of prebuilts to save space.
-DONT_DEXPREOPT_PREBUILTS := true
-
 # Filesystem
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 16777216
