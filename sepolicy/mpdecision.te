@@ -17,7 +17,7 @@ allow mpdecision sysfs_cpuboost:file rw_file_perms;
 #Allow mpdecision set cpu affinity
 allow mpdecision kernel:process setsched;
 
-allow mpdecision self:capability { dac_override net_admin fsetid chown };
+allow mpdecision self:capability { net_admin fsetid chown };
 allow mpdecision self:netlink_kobject_uevent_socket { create read setopt bind };
 allow mpdecision self:socket create_socket_perms;
 allowxperm mpdecision self:socket ioctl msm_sock_ipc_ioctls;
