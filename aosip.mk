@@ -20,6 +20,9 @@ $(call inherit-product, vendor/aosip/config/common_full_phone.mk)
 # Inherit AOSP device configuration for shamu.
 $(call inherit-product, device/moto/shamu/aosp_shamu.mk)
 
+PRODUCT_BUILD_PROP_OVERRIDES += \
+DEVICE_MAINTAINERS="camcory"
+
 PRODUCT_NAME := aosip_shamu
 PRODUCT_DEVICE := shamu
 PRODUCT_BRAND := google
