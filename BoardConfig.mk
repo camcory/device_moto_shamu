@@ -85,8 +85,6 @@ TARGET_BOARD_PLATFORM := msm8084
 TARGET_BOOTLOADER_BOARD_NAME := shamu
 TARGET_NO_RPC := true
 
-TARGET_BOARD_INFO_FILE := device/moto/shamu/board-info.txt
-
 USE_OPENGL_RENDERER := true
 TARGET_USES_ION := true
 TARGET_USES_GRALLOC1_ADAPTER := true
@@ -114,8 +112,6 @@ BOARD_CHARGER_ENABLE_SUSPEND := true
 BOARD_HAL_STATIC_LIBRARIES := libhealthd.shamu
 
 TARGET_RECOVERY_FSTAB = device/moto/shamu/fstab.shamu
-
-TARGET_RELEASETOOLS_EXTENSIONS := device/moto/shamu
 
 # Support Native Layer RF cutback
 BOARD_USES_CUTBACK_IN_RILD := true
