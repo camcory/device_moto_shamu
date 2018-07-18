@@ -178,8 +178,6 @@ on post-fs-data
 
     mkdir /data/audio/ 0770 media audio
 
-    setprop vold.post_fs_data_done 1
-
     # NFC local data and nfcee xml storage
     mkdir /data/nfc 0770 nfc nfc
     mkdir /data/nfc/param 0770 nfc nfc
@@ -187,6 +185,9 @@ on post-fs-data
     # Audio DSP permissions
     mkdir /data/adspd 0770 media media
     mkdir /data/adspd/1 0770 media media
+
+    # keep that at the end of on post-fs-data
+    setprop vold.post_fs_data_done 1
 
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
