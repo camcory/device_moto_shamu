@@ -94,7 +94,6 @@
 /system/bin/imsdatadaemon                             u:object_r:ims_exec:s0
 /system/bin/imsqmidaemon                              u:object_r:ims_exec:s0
 /system/bin/ims_rtp_daemon                            u:object_r:ims_exec:s0
-/system/bin/init\.mmi\.touch\.sh                      u:object_r:mmi_touch_sh_exec:s0
 /system/bin/irsc_util                                 u:object_r:irsc_util_exec:s0
 /system/bin/ks                                        u:object_r:mdm_helper_exec:s0
 /system/bin/mdm_helper                                u:object_r:mdm_helper_exec:s0
@@ -114,6 +113,7 @@
 /system/vendor/bin/hw/android\.hardware\.light@2\.0-service.shamu        u:object_r:hal_light_default_exec:s0
 /system/vendor/bin/hw/android\.hardware\.thermal@1\.1-service\.shamu   u:object_r:hal_thermal_default_exec:s0
 /system/vendor/bin/hw/android\.hardware\.vibrator@1\.0-service\.shamu  u:object_r:hal_vibrator_default_exec:s0
+/system/vendor/bin/init\.mmi\.touch\.sh               u:object_r:mmi_touch_sh_exec:s0
 /system/vendor/bin/init\.qcom\.devstart\.sh           u:object_r:init-qcom-devstart-sh_exec:s0
 /system/vendor/bin/init\.qcom\.devwait\.sh            u:object_r:init-qcom-devwait-sh_exec:s0
 /system/vendor/bin/thermal-engine                     u:object_r:thermald_exec:s0
