@@ -2,7 +2,6 @@
 allow init tmpfs:lnk_file create;
 
 allow init {
-    proc_cpu_alignment
     sysfs_block_iosched
     sysfs_block_read_ahead_kb
     sysfs_devices_system_cpu
@@ -14,7 +13,6 @@ allow init {
 }:file w_file_perms;
 
 allow init {
-    proc_slabinfo
     sysfs_mmi_touch
     sysfs_msm_subsys
     sysfs_usb

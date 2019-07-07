@@ -49,6 +49,3 @@ type sysfs_sar_wifi, fs_type, sysfs_type;
 
 type sysfs_kgsl_gpuclk, fs_type, sysfs_type;
 type sysfs_socinfo, sysfs_type, fs_type, mlstrustedobject;
-
-type proc_cpu_alignment, fs_type, proc_type;
-type proc_slabinfo, fs_type, proc_type;
